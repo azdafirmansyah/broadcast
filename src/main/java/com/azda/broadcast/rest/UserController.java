@@ -3,12 +3,9 @@ package com.azda.broadcast.rest;
 import java.util.*;
 import javax.validation.Valid;
 
-//import com.azda.broadcast.exception.ResourceNotFoundException;
 import com.azda.broadcast.exception.ResourceNotFoundException;
 import com.azda.broadcast.handler.TokenHandler;
 import com.azda.broadcast.helper.CommonHelper;
-import com.azda.broadcast.model.Notifications;
-import com.azda.broadcast.model.Roles;
 import com.azda.broadcast.model.UserPrivilages;
 import com.azda.broadcast.model.Users;
 import com.azda.broadcast.repository.UserPrivilagesRepository;
@@ -84,9 +81,9 @@ public class UserController {
             objectNode.put("Token", newToken);
             return responseJson;
         }catch (Exception e){
-            logger.error("Failed to Put Token");
+            logger.error("Failed to Set Token");
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Put Token", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Set Token", e);
         }
     }
 
@@ -149,22 +146,33 @@ public class UserController {
     })
     @GetMapping("/users")
     public List<Users> getAllUsers(@RequestHeader(name="Authorization") String token) {
+
         logger.info("Processing Request Get All Users");
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        Users usr = TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         List<Users> usersData = new ArrayList<Users>();
         if (usr.getCreatedBy() == 0) {
             usersData = userRepository.findByDeletedAtIsNull();
         }else{
-            usersData = userRepository.findByCreatedByAndDeletedAtIsNull(usr.getId());
+            int sizePrivilages = usr.getUserPrivilages().size();
+            if (sizePrivilages == 0){
+                throw new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "Unathorized To View User", null);
+            }
+
+            List<Long> roleList = new ArrayList<>();
+            for (UserPrivilages up : usr.getUserPrivilages()) {
+                roleList.add(up.getRole_id());
+            }
+
+            if (roleList.contains(Constant.ROLE_USER)){
+                throw new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "Unathorized To View User", null);
+            }else {
+                usersData = userRepository.findByCreatedByAndDeletedAtIsNull(usr.getId());
+            }
         }
-//        List<Users>
 
         logger.info("Successfully Response Get All Users");
         return usersData;
@@ -183,12 +191,7 @@ public class UserController {
             throws ResourceNotFoundException {
         logger.info("Processing Request Get User By ID :" +String.valueOf(userId));
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for this id : " + userId));
@@ -298,9 +301,9 @@ public class UserController {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(json);
         }catch (Exception e){
-            logger.error("Failed Response Created User ");
+            logger.error("Failed to Created User ");
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Error Internals : ", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Created User  ", e);
         }
 
     }
@@ -317,12 +320,7 @@ public class UserController {
 
         logger.info("Processing Request Update User");
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        Users usr = TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for this id : " + userId));
@@ -356,16 +354,11 @@ public class UserController {
                                             @RequestHeader(name="Authorization") String token) throws ResourceNotFoundException {
 
         logger.info("Processing Request Delete User");
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        Users usr = TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for this id : " + userId));
-        if ((user.getCreatedBy() != usr.getId()) && (usr.getId() != userId)) {
+        if (user.getCreatedBy() != usr.getId()) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED, "Don't have access to delete this user", null);
         }
@@ -387,18 +380,18 @@ public class UserController {
     @GetMapping("/user_privilages")
     public List<UserPrivilages> getAllUserPrivilages(@RequestHeader(name="Authorization") String token) {
         logger.info("Processing Request Get All User Privilages");
+        try {
+            TokenHandler.tokenValidation(token.substring(7),userRepository);
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
+            List<UserPrivilages> userPrivilageData = userPrivilagesRepository.findByDeletedAtIsNull();
+
+            logger.info("Successfully Response Get All User Privilages");
+            return userPrivilageData;
+        }catch (Exception e){
+            logger.error("Failed to get User Privilages ");
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to User Privilages ", e);
         }
-
-        List<UserPrivilages> userPrivilageData = userPrivilagesRepository.findByDeletedAtIsNull();
-
-        logger.info("Successfully Response Get All User Privilages");
-        return userPrivilageData;
     }
 
     @ApiOperation(value = "View Detail of User Privilages Data")
@@ -414,12 +407,7 @@ public class UserController {
             throws ResourceNotFoundException {
         logger.info("Processing Request Get User Privilage By ID :" +String.valueOf(userPrivilageId));
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         UserPrivilages userPrivilages = userPrivilagesRepository.findById(userPrivilageId)
                 .orElseThrow(() -> new ResourceNotFoundException("User Privilage not found for this id : " + userPrivilageId));
@@ -449,9 +437,9 @@ public class UserController {
             logger.info("Successfully Response Save User Privilage");
             return userPrivilagesRepository.save(userPrivilage);
         }catch (Exception e){
-            logger.error("Failed Save User Privilage ");
+            logger.error("Failed to Save User Privilage ");
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Error Internals : ", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Save User Privilage ", e);
         }
     }
 
@@ -467,15 +455,14 @@ public class UserController {
 
         logger.info("Processing Request Update User Privilage");
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        Users usr = TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         UserPrivilages userPrivilage = userPrivilagesRepository.findById(userPrivilageId)
                 .orElseThrow(() -> new ResourceNotFoundException("User Privilage not found for this id : " + userPrivilageId));
+        if (userPrivilage.getCreatedBy() != usr.getId())  {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Don't have access to edit this user privilages", null);
+        }
         userPrivilage.setOrganization_id(userPrivilageDetails.getOrganization_id());
         userPrivilage.setExternal_id(userPrivilageDetails.getExternal_id());
         userPrivilage.setInternal_id(userPrivilageDetails.getInternal_id());
@@ -500,19 +487,15 @@ public class UserController {
                                                             @RequestHeader(name="Authorization") String token) throws ResourceNotFoundException {
 
         logger.info("Processing Request Delete User Privilage");
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+
+        Users usr = TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         UserPrivilages userPrivilage = userPrivilagesRepository.findById(userPrivilageId)
                 .orElseThrow(() -> new ResourceNotFoundException("User Privilage not found for this id : " + userPrivilageId));
-//        if ((user.getCreatedBy() != usr.getId()) && (usr.getId() != userId)) {
-//            throw new ResponseStatusException(
-//                    HttpStatus.UNAUTHORIZED, "Don't have access to delete this user", null);
-//        }
+        if (userPrivilage.getCreatedBy() != usr.getId())  {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Don't have access to delete this user privilages", null);
+        }
         userPrivilage.setDeletedAt(new Date());
         userPrivilage.setDeletedBy(usr.getId());
         final UserPrivilages deleteUserPrivilage = userPrivilagesRepository.save(userPrivilage);

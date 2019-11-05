@@ -4,7 +4,6 @@ import java.util.*;
 import javax.validation.Valid;
 import javax.websocket.server.PathParam;
 
-//import com.azda.broadcast.exception.ResourceNotFoundException;
 import com.azda.broadcast.exception.ResourceNotFoundException;
 import com.azda.broadcast.handler.TokenHandler;
 import com.azda.broadcast.model.*;
@@ -81,7 +80,7 @@ public class NotificationController {
             throws ResourceNotFoundException {
         logger.info("Processing Request Get Notification By ID :" +String.valueOf(notificationId));
 
-        Users usr = TokenHandler.tokenValidation(token.substring(7),userRepository);
+        TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         Notifications notifications = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found for this id : " + notificationId));

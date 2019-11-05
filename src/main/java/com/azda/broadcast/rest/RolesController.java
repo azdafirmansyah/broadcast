@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 import javax.validation.Valid;
 
-//import com.azda.broadcast.exception.ResourceNotFoundException;
 import com.azda.broadcast.exception.ResourceNotFoundException;
+import com.azda.broadcast.handler.TokenHandler;
 import com.azda.broadcast.model.Roles;
 import com.azda.broadcast.model.Users;
 import com.azda.broadcast.repository.RoleRepository;
@@ -44,12 +44,7 @@ public class RolesController {
     public List<Roles> getAllRoles(@RequestHeader(name="Authorization") String token) {
         logger.info("Processing Request Get All Roles");
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         List<Roles> rolesData = roleRepository.findAll();
 
@@ -69,12 +64,8 @@ public class RolesController {
                                               @RequestHeader(name="Authorization") String token)
             throws ResourceNotFoundException {
         logger.info("Processing Request Get Roles By ID :" +String.valueOf(roleId));
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+
+        TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         Roles roles = roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Roles not found for this id : " + roleId));
@@ -92,25 +83,19 @@ public class RolesController {
     public Roles createRole(
             @ApiParam(value = "Save Role to Database", required = true)  @Valid @RequestBody Roles roles,
             @RequestHeader(name="Authorization") String token) {
-//        try {
+        try {
+            String name = roles.getName();
+            logger.info("Processing Request Save Roles : " + name);
 
-        String name = roles.getName();
-        logger.info("Processing Request Save Roles : " + name);
+            TokenHandler.tokenValidation(token.substring(7),userRepository);
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
+            logger.info("Successfully Response Save Roles : "+ name);
+            return roleRepository.save(roles);
+        }catch (Exception e){
+            logger.error("Failed to Save Role ",e);
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Save Role", e);
         }
-
-        logger.info("Successfully Response Save Roles : "+ name);
-        return roleRepository.save(roles);
-//        }catch (Exception e){
-//            logger.error("Error Request Save Roles");
-////            return new GlobalExceptionHandler().globleExcpetionHandler(e, HttpStatus.INTERNAL_SERVER_ERROR);
-//            throw new ResourceNotFoundException("Employee not found for this id");
-//        }
     }
 
     @ApiOperation(value = "Update Broadcast Roles")
@@ -125,15 +110,11 @@ public class RolesController {
 
         logger.info("Processing Request Update Roles");
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         Roles roles = roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Roles not found for this id : " + roleId));
+
         roles.setName(roleDetails.getName());
         roles.setDescription(roleDetails.getDescription());
         final Roles updatedRoles = roleRepository.save(roles);
@@ -151,14 +132,10 @@ public class RolesController {
     public Map<String, Boolean> deleteRoles(@PathVariable(value = "id") Long roleId,
                                             @RequestHeader(name="Authorization") String token)
             throws ResourceNotFoundException {
+
         logger.info("Processing Request Delete Roles");
 
-        String jwtToken = token.substring(7);
-        Users usr = userRepository.findByToken(jwtToken);
-        if (usr == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Invalid Token", null);
-        }
+        TokenHandler.tokenValidation(token.substring(7),userRepository);
 
         Roles roles = roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Roles not found for this id : " + roleId));

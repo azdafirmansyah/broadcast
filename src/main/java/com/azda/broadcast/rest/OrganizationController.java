@@ -58,7 +58,7 @@ public class OrganizationController {
         }catch (Exception e){
             logger.error("Failed to get Organization Type ",e);
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Failed to get Organization Type", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get Organization Type ", e);
         }
 
     }
@@ -87,7 +87,7 @@ public class OrganizationController {
         }catch (Exception e){
             logger.error("Failed to get Organization Type By Id",e);
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Failed to get Organization Type By Id", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get Organization Type By Id", e);
         }
     }
 
@@ -109,9 +109,9 @@ public class OrganizationController {
             logger.info("Successfully Response Get All Organizations");
             return organizationsData;
         }catch (Exception e){
-            logger.error("Failed to get Organization Type By Id",e);
+            logger.error("Failed to get Organization ",e);
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Failed to get Organization", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get Organization ", e);
         }
     }
 
@@ -136,9 +136,9 @@ public class OrganizationController {
             logger.info("Successfully Response Get Organization By ID :" +String.valueOf(organizationId));
             return ResponseEntity.ok().body(organization);
         }catch (Exception e){
-            logger.error("Failed to get Organization Type By Id",e);
+            logger.error("Failed to get Organization By Id ",e);
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Failed to get Organization", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get Organization By Id ", e);
         }
     }
 
@@ -347,9 +347,9 @@ public class OrganizationController {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(json);
         }catch (Exception e){
-            logger.error("Failed to Create Json ",e);
+            logger.error("Failed to Create Organization Info ",e);
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Failed to Create Json", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Create Organization Info ", e);
         }
     }
 

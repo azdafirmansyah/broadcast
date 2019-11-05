@@ -320,9 +320,9 @@ public class InternalController {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(json);
         }catch (Exception e){
-            logger.error("Failed Response Created Internal Info ");
+            logger.error("Failed to Create Ixternal Info ");
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Error Internals : ", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Create Internal Info ", e);
         }
     }
 

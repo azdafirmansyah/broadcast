@@ -318,9 +318,9 @@ public class ExternalController {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(json);
         }catch (Exception e){
-            logger.error("Failed Response Created External Info ");
+            logger.error("Failed to Create External Info ");
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Error Internals : ", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Create External Info : ", e);
         }
     }
 
